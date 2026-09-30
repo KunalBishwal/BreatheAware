@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read for all environmental data
+    match /stations/{stationId} { allow read: if true; allow write: if request.auth.token.admin == true; }
+    match /sensors/{sensorId} { allow read: if true; allow write: if request.auth.token.admin == true; }
+    match /measurements/{docId} { allow read: if true; allow write: if request.auth.token.admin == true; }
+    match /dailyAqi/{docId} { allow read: if true; allow write: if request.auth.token.admin == true; }
+    match /alerts/{alertId} { allow read: if true; allow write: if request.auth.token.admin == true; }
+    match /clusters/{clusterId} { allow read: if true; allow write: if request.auth.token.admin == true; }
+    
+    // Users can only read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
