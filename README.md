@@ -203,7 +203,7 @@ cp breatheaware-backend/.env.example breatheaware-backend/.env
 | `OPENAQ_API_KEY` | OpenAQ v3 API Key | [explore.openaq.org](https://explore.openaq.org) |
 | `OPENAQ_BASE_URL` | OpenAQ v3 Endpoint | `https://api.openaq.org/v3` |
 | `CPCB_API_KEY` | India Data.gov.in API Key | [data.gov.in](https://data.gov.in) |
-| `FIREBASE_PROJECT_ID` | Google Cloud / Firebase Project | `aqi-project-7e3bd` |
+| `FIREBASE_PROJECT_ID` | Google Cloud / Firebase Project | Your Firebase project ID |
 | `ML_SERVICE_URL` | Microservice Endpoint | `http://localhost:8000` |
 
 ---
