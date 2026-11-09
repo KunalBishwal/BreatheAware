@@ -19,17 +19,27 @@ export default function Seasonal() {
     { path: '/dashboard/story', label: 'Story', icon: BookOpen },
   ];
 
+  const currentPollutantInfo = POLLUTANTS.find(p => p.key === selectedPollutant);
+
   const weekdayAvg = Array.from({ length: 24 }, (_, hour) => {
     const points = diurnalData.filter(d => d.hour === hour && d.weekday < 5);
     const avg = points.reduce((sum, p) => sum + (p[selectedPollutant as keyof typeof p] as number || 0), 0) / (points.length || 1);
-    return { hour, value: Math.round(avg) };
+    return { hour, value: selectedPollutant === 'co' ? +avg.toFixed(1) : Math.round(avg) };
   });
 
   const weekendAvg = Array.from({ length: 24 }, (_, hour) => {
     const points = diurnalData.filter(d => d.hour === hour && d.weekday >= 5);
     const avg = points.reduce((sum, p) => sum + (p[selectedPollutant as keyof typeof p] as number || 0), 0) / (points.length || 1);
-    return { hour, value: Math.round(avg) };
+    return { hour, value: selectedPollutant === 'co' ? +avg.toFixed(1) : Math.round(avg) };
   });
+
+  const standardLimit = currentPollutantInfo?.standard24h || currentPollutantInfo?.standard8h || 0;
+  const maxDiurnalVal = Math.max(
+    0.1,
+    ...weekdayAvg.map(p => p.value),
+    ...weekendAvg.map(p => p.value),
+    standardLimit
+  ) * 1.18;
 
   const monthlyAvg = Array.from({ length: 12 }, (_, month) => {
     const days = calendarData.filter(d => d.month === month);
@@ -134,7 +144,7 @@ export default function Seasonal() {
           {/* Calendar Heatmap */}
           <div className="glow-card rounded-xl p-3 sm:p-4 md:p-6 theme-transition">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-              <h3 className="font-heading text-xs sm:text-sm font-semibold text-text-secondary uppercase tracking-wider">Calendar Heatmap · 2024</h3>
+              <h3 className="font-heading text-xs sm:text-sm font-semibold text-text-secondary uppercase tracking-wider">Calendar Heatmap · 2026 YTD (Jan–Oct)</h3>
               <div className="flex items-center gap-1">
                 <span className="font-mono text-[8px] sm:text-[9px] text-text-muted">Good</span>
                 {['#00B050', '#92D050', '#FFFF00', '#FF9900', '#FF0000', '#800000'].map(c => (
@@ -146,9 +156,9 @@ export default function Seasonal() {
             
             <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
               <div className="min-w-[600px]">
-                <div className="flex gap-[2px] mb-1">
+                <div className="grid grid-cols-12 gap-[2px] mb-1">
                   {monthNames.map(m => (
-                    <div key={m} className="flex-1 text-center">
+                    <div key={m} className="text-center">
                       <span className="font-mono text-[8px] sm:text-[9px] text-text-muted">{m}</span>
                     </div>
                   ))}
@@ -159,15 +169,16 @@ export default function Seasonal() {
                       {['S', 'M', 'T', 'W', 'T', 'F', 'S'][weekday]}
                     </span>
                     {Array.from({ length: 53 }, (_, week) => {
-                      const dayData = calendarData.find(d => d.weekday === weekday && Math.floor(d.day / 7) === week % 5 && d.month === week % 12);
+                      const dayData = calendarData.find(d => d.weekday === weekday && d.weekIndex === week);
                       const aqi = dayData?.aqi || 0;
                       return (
                         <div
                           key={week}
-                          className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2px] flex-shrink-0"
+                          title={dayData ? `${dayData.date} · AQI ${dayData.aqi} (${dayData.category})` : undefined}
+                          className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2px] flex-shrink-0 cursor-pointer transition-transform hover:scale-125"
                           style={{
                             backgroundColor: aqi > 0 ? getAQIColor(aqi) : 'rgba(148,163,184,0.05)',
-                            opacity: aqi > 0 ? 0.8 : 0.2,
+                            opacity: aqi > 0 ? 0.85 : 0.15,
                           }}
                         />
                       );
@@ -180,22 +191,65 @@ export default function Seasonal() {
 
           {/* Diurnal Chart */}
           <div className="glow-card rounded-xl p-3 sm:p-4 md:p-6 theme-transition">
-            <h3 className="font-heading text-xs sm:text-sm font-semibold text-text-secondary uppercase tracking-wider mb-4">
-              Diurnal Pattern · {POLLUTANTS.find(p => p.key === selectedPollutant)?.label}
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+              <div>
+                <h3 className="font-heading text-xs sm:text-sm font-semibold text-text-secondary uppercase tracking-wider">
+                  Diurnal Pattern · {currentPollutantInfo?.label} ({currentPollutantInfo?.unit})
+                </h3>
+                <p className="font-mono text-[9px] text-text-muted mt-0.5">
+                  24-hour diurnal profile reflecting photochemical, rush-hour, and inversion dynamics
+                </p>
+              </div>
+              {standardLimit > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-0.5 border-b border-dashed border-aqi-verypoor"></div>
+                  <span className="font-mono text-[9px] text-text-muted">
+                    NAAQS Standard: {standardLimit} {currentPollutantInfo?.unit}
+                  </span>
+                </div>
+              )}
+            </div>
             <div className="relative h-[150px] sm:h-[200px]">
               <svg className="w-full h-full" viewBox="0 0 480 200" preserveAspectRatio="none">
                 {[0, 50, 100, 150, 200].map(y => (
                   <line key={y} x1="0" y1={y} x2="480" y2={y} stroke="rgba(148,163,184,0.05)" strokeWidth="1" />
                 ))}
+                {/* Standard threshold guide line */}
+                {standardLimit > 0 && maxDiurnalVal > 0 && (
+                  <g>
+                    <line
+                      x1="0"
+                      y1={Math.max(10, 200 - (standardLimit / maxDiurnalVal) * 180)}
+                      x2="480"
+                      y2={Math.max(10, 200 - (standardLimit / maxDiurnalVal) * 180)}
+                      stroke="#FF0000"
+                      strokeWidth="1"
+                      strokeDasharray="4,4"
+                      opacity="0.45"
+                    />
+                    <text
+                      x="475"
+                      y={Math.max(18, 200 - (standardLimit / maxDiurnalVal) * 180 - 4)}
+                      textAnchor="end"
+                      fill="#FF0000"
+                      fontSize="8"
+                      fontFamily="JetBrains Mono"
+                      opacity="0.75"
+                    >
+                      NAAQS Limit ({standardLimit} {currentPollutantInfo?.unit})
+                    </text>
+                  </g>
+                )}
+                {/* Weekday curve */}
                 <path
-                  d={weekdayAvg.map((p, i) => `${i === 0 ? 'M' : 'L'}${(p.hour / 23) * 480},${200 - (p.value / 200) * 200}`).join(' ')}
+                  d={weekdayAvg.map((p, i) => `${i === 0 ? 'M' : 'L'}${(p.hour / 23) * 480},${200 - (p.value / maxDiurnalVal) * 180}`).join(' ')}
                   fill="none"
                   stroke="#FF9900"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                 />
+                {/* Weekend curve */}
                 <path
-                  d={weekendAvg.map((p, i) => `${i === 0 ? 'M' : 'L'}${(p.hour / 23) * 480},${200 - (p.value / 200) * 200}`).join(' ')}
+                  d={weekendAvg.map((p, i) => `${i === 0 ? 'M' : 'L'}${(p.hour / 23) * 480},${200 - (p.value / maxDiurnalVal) * 180}`).join(' ')}
                   fill="none"
                   stroke="#00B050"
                   strokeWidth="2"
@@ -203,19 +257,23 @@ export default function Seasonal() {
                 />
               </svg>
               <div className="absolute bottom-0 left-0 right-0 flex justify-between">
-                {['00', '04', '08', '12', '16', '20', '24'].map(t => (
+                {['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'].map(t => (
                   <span key={t} className="font-mono text-[8px] sm:text-[9px] text-text-muted">{t}</span>
                 ))}
               </div>
             </div>
             <div className="flex gap-4 sm:gap-6 mt-3">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-[2px] sm:w-4 bg-aqi-poor" />
-                <span className="font-mono text-[9px] sm:text-[10px] text-text-muted">Weekday</span>
+                <div className="w-3 h-[2.5px] sm:w-4 bg-[#FF9900]" />
+                <span className="font-mono text-[9px] sm:text-[10px] text-text-muted">
+                  Weekday Avg (Peak: {Math.max(...weekdayAvg.map(p => p.value))} {currentPollutantInfo?.unit})
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-[2px] sm:w-4 bg-aqi-good" />
-                <span className="font-mono text-[9px] sm:text-[10px] text-text-muted">Weekend</span>
+                <span className="font-mono text-[9px] sm:text-[10px] text-text-muted">
+                  Weekend Avg (Peak: {Math.max(...weekendAvg.map(p => p.value))} {currentPollutantInfo?.unit})
+                </span>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
   "name": "breatheaware-functions",
   "version": "1.0.0",
   "description": "BreatheAware Air Quality Backend - Firebase Cloud Functions v2",
-  "main": "lib/index.js",
+  "main": "lib/src/index.js",
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
@@ -10,7 +10,7 @@
     "test": "tsc && node test-runner.cjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": "22"
   },
   "dependencies": {
     "axios": "^1.7.9",

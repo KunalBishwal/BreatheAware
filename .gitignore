@@ -11,7 +11,8 @@ node_modules/
 dist/
 dist-ssr/
 build/
-lib/
+breatheaware-backend/functions/lib/
+!src/lib/
 out/
 .next/
 

@@ -6,6 +6,9 @@ export interface Station {
   lat: number;
   lng: number;
   source: 'openaq' | 'cpcb';
+  network?: string;
+  stationType?: 'Traffic' | 'Industrial' | 'Residential' | 'Commercial' | 'Background';
+  status?: 'active' | 'maintenance';
   lastUpdated: string;
 }
 
@@ -50,6 +53,7 @@ export interface CalendarDay {
   month: number;
   day: number;
   weekday: number;
+  weekIndex?: number;
   aqi: number;
   category: AQICategory;
 }
@@ -60,6 +64,10 @@ export interface DiurnalPoint {
   pm25: number;
   pm10: number;
   no2: number;
+  so2: number;
+  co: number;
+  o3: number;
+  nh3: number;
 }
 
 export interface ExceedanceData {

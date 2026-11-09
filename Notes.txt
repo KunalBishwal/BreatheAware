@@ -1,0 +1,15 @@
+cd c:\Coding\BreatheAware\breatheaware-backend\ml-service
+pip install -r requirements.txt    # first time only
+python main.py
+
+
+cd c:\Coding\BreatheAware\breatheaware-backend\functions
+npm install    # first time only
+npx tsc        # compile TypeScript
+# Then deploy or emulate:
+firebase login
+firebase emulators:start
+
+cd c:\Coding\BreatheAware
+npm install    # first time only
+npm run dev
